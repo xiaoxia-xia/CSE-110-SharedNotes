@@ -1,5 +1,7 @@
 package edu.ucsd.cse110.sharednotes.model;
 
+import android.util.Log;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -13,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 public class NoteRepository {
     private final NoteDao dao;
-
+    MutableLiveData<Note> note;
     public NoteRepository(NoteDao dao) {
         this.dao = dao;
     }
@@ -94,11 +96,10 @@ public class NoteRepository {
         // you don't create a new polling thread every time you call getRemote with the same title.
         // You don't need to worry about killing background threads.
 
-        MutableLiveData<Note> note = new MutableLiveData<>();
-        NoteAPI noteApi = NoteAPI.provide();
+        note = new MutableLiveData<>();
         var executor = Executors.newSingleThreadScheduledExecutor();
+        NoteAPI noteApi = NoteAPI.provide();
         ScheduledFuture<?> clockFuture;
-
         clockFuture = executor.scheduleAtFixedRate(() -> {
             String json = noteApi.getNote(title);
             note.postValue(Note.fromJSON(json));
