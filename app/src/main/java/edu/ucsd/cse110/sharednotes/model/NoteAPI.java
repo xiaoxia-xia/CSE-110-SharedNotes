@@ -4,8 +4,11 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class NoteAPI {
     // TODO: Implement the API using OkHttp!
@@ -13,6 +16,8 @@ public class NoteAPI {
     // TODO: Read the docs: https://sharednotes.goto.ucsd.edu/docs
 
     private volatile static NoteAPI instance = null;
+    public static final MediaType JSON
+            = MediaType.get("application/json; charset=utf-8");
 
     private OkHttpClient client;
 
@@ -50,5 +55,48 @@ public class NoteAPI {
         }
     }
 
-    // Test
+
+    public String getNote(String msg) {
+        msg = msg.replace(" ", "%20");
+        var body ="";
+
+        var request = new Request.Builder()
+                .url("https://sharednotes.goto.ucsd.edu/notes/" + msg)
+                .method("GET", null)
+                .build();
+
+        try (var response = client.newCall(request).execute()) {
+            assert response.body() != null;
+            body = response.body().string();
+            Log.i("GETNOTE", body);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return body;
+    }
+
+    public String postNote(Note note) {
+        String msg = note.title;
+        msg = msg.replace(" ", "%20");
+        String jsonNote = "{" +
+                "  \"content\": \"" + note.content + "\" ," +
+                "  \"updated_at\": \"" + note.updatedAt + "\" ," +
+                "}";
+        String responseStr = "";
+
+        RequestBody body = RequestBody.create(jsonNote, JSON);
+        Request request = new Request.Builder()
+                .url("https://sharednotes.goto.ucsd.edu/notes/" + msg)
+                .post(body)
+                .build();
+        try (Response response = client.newCall(request).execute()) {
+            responseStr = response.body().string();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return responseStr;
+    }
+
 }

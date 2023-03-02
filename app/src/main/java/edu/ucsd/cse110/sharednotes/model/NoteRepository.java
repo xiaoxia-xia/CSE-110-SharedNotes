@@ -89,6 +89,9 @@ public class NoteRepository {
         // You may (but don't have to) want to cache the LiveData's for each title, so that
         // you don't create a new polling thread every time you call getRemote with the same title.
         // You don't need to worry about killing background threads.
+        NoteAPI noteApi = NoteAPI.provide();
+        String json = noteApi.getNote(title);
+        Note note = Note.fromJSON(json);
 
         throw new UnsupportedOperationException("Not implemented yet");
     }
