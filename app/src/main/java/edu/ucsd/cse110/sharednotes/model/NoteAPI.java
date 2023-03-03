@@ -11,6 +11,7 @@ import com.google.gson.Gson;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import okhttp3.FormBody;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -70,7 +71,7 @@ public class NoteAPI {
         }
     }
 
-
+    @WorkerThread
     public String getNote(String msg) {
         msg = msg.replace(" ", "%20");
         var body ="";
@@ -91,26 +92,24 @@ public class NoteAPI {
         return body;
     }
 
+    @WorkerThread
     public String postNote(Note note) {
         String msg = note.title;
         msg = msg.replace(" ", "%20");
-        String jsonNote = "{" +
-                "  \"content\": \"" + note.content + "\" ," +
-                "  \"updated_at\": \"" + note.version + "\" ," +
-                "}";
+        String jsonNote = note.toJSON();
         String responseStr = "";
-
+        Log.i("Json", jsonNote);
+        Log.i("Msg", msg);
         RequestBody body = RequestBody.create(jsonNote, JSON);
         Request request = new Request.Builder()
                 .url("https://sharednotes.goto.ucsd.edu/notes/" + msg)
-                .post(body)
+                .put(body)
                 .build();
         try (Response response = client.newCall(request).execute()) {
             responseStr = response.body().string();
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         return responseStr;
     }
 
@@ -122,4 +121,6 @@ public class NoteAPI {
         // We can use future.get(1, SECONDS) to wait for the result.
         return future;
     }
+
+
 }

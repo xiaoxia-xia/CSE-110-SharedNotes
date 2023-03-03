@@ -16,7 +16,6 @@ import java.util.concurrent.TimeUnit;
 
 public class NoteRepository {
     private final NoteDao dao;
-    MutableLiveData<Note> note;
     public NoteRepository(NoteDao dao) {
         this.dao = dao;
     }
@@ -37,12 +36,12 @@ public class NoteRepository {
      */
     public LiveData<Note> getSynced(String title) {
         var note = new MediatorLiveData<Note>();
-
         Observer<Note> updateFromRemote = theirNote -> {
+            //Log.i("update", theirNote.content);
             var ourNote = note.getValue();
             if (theirNote == null) return; // do nothing
             if (ourNote == null || ourNote.version < theirNote.version) {
-                upsertLocal(theirNote);
+                upsertLocal(theirNote, false);
             }
         };
 
@@ -70,11 +69,17 @@ public class NoteRepository {
         return dao.getAll();
     }
 
-    public void upsertLocal(Note note) {
-        note.version = note.version + 1;
+    public void upsertLocal(Note note, boolean incrementVersion) {
+        if (incrementVersion) {
+            note.version = note.version + 1;
+        }
+        Log.i("version", Long.toString(note.version));
         dao.upsert(note);
     }
 
+    public void upsertLocal(Note note) {
+        upsertLocal(note, true);
+    }
     public void deleteLocal(Note note) {
         dao.delete(note);
     }
@@ -97,8 +102,7 @@ public class NoteRepository {
         // You may (but don't have to) want to cache the LiveData's for each title, so that
         // you don't create a new polling thread every time you call getRemote with the same title.
         // You don't need to worry about killing background threads.
-
-        note = new MutableLiveData<>();
+        var note = new MutableLiveData<Note>();
         var executor = Executors.newSingleThreadScheduledExecutor();
         NoteAPI noteApi = NoteAPI.provide();
         ScheduledFuture<?> clockFuture;
@@ -106,16 +110,18 @@ public class NoteRepository {
             String json = noteApi.getNote(title);
             note.postValue(Note.fromJSON(json));
         }, 0, 3000, TimeUnit.MILLISECONDS);
-
-
         return note;
-//        throw new UnsupportedOperationException("Not implemented yet");
+        //throw new UnsupportedOperationException("Not implemented yet");
     }
 
     public void upsertRemote(Note note) {
         // TODO: Implement upsertRemote!
+        var executor = Executors.newSingleThreadScheduledExecutor();
         NoteAPI noteApi = NoteAPI.provide();
-        noteApi.postNote(note);
+        executor.submit(() -> {
+            String response = noteApi.postNote(note);
+            Log.i("RESPONSE", response);
+        });
 //        throw new UnsupportedOperationException("Not implemented yet");
     }
 }
